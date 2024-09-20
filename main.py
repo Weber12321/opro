@@ -1,24 +1,31 @@
 
-from Prompts import meta_prompt, scorer_prompt
-import pandas as pd
-from langchain import OpenAI, LLMChain, PromptTemplate
-from langchain.callbacks.base import BaseCallbackHandler
 import re
+import pandas as pd
 
-def create_chain_from_template(template, input_variables, temperature=.5,callbacks=[], verbose=True):
+from Prompts import meta_prompt, scorer_prompt
+from langchain import PromptTemplate
+from langchain_huggingface.llms import HuggingFacePipeline
+from langchain_core.output_parsers import StrOutputParser
+from transformers import pipeline
+
+
+def create_chain_from_template(
+    template, input_variables, temperature=.5,callbacks=[], verbose=True):
+
     prompt = PromptTemplate(
         input_variables=input_variables,
         template=template
     )
 
-    chain = LLMChain(
-        llm=OpenAI(temperature=temperature),
-        prompt=prompt,
-        callbacks=callbacks,
-        verbose=verbose,
-    )
+    hf = HuggingFacePipeline(pipeline=pipeline(
+        model="/opt/llm/models/Breeze-7B-32k-Instruct-v1_0" ,
+        task="text-generation"
+    )) 
+
+    chain = prompt | hf | StrOutputParser()
 
     return chain
+
 
 def build_text_and_scores(performance_df):
     return ''.join([f"text:\n{performance_df.iloc[i]['text']}\nscore:\n{performance_df.iloc[i]['score']}\n" for i in range(len(performance_df))])
