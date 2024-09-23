@@ -31,6 +31,7 @@ def create_chain_from_template(
             model_kwargs={
                 "torch_dtype": torch.bfloat16,
             },
+            max_new_tokens=8000,
             device_map="auto",
             temperature=temperature,
             do_sample=True,
@@ -69,7 +70,9 @@ def score_prompts(scorer_chain,prompts,training_examples,performance_df):
         for _, example in training_examples.iterrows():
             question = example['question']
             answer = example['raw_answer']
-            sample_answer = scorer_chain.predict(question=question,instruction=prompt)
+            sample_answer = scorer_chain.invoke({
+                "question":question,"instruction":prompt
+            })
             scores.append(are_numbers_the_same(answer,sample_answer))
         score = int(100*sum(scores)/len(scores))
         performance_df = performance_df._append({'text':prompt,'score':score},ignore_index=True)
